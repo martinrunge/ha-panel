@@ -1,7 +1,8 @@
 #!/bin/bash
 
 SCRIPTDIR=$(dirname $0)
-PIDFILE=$SCRIPTDIR/../run/$0.pid
+SCRIPTNAME=$(basename $0)
+PIDFILE=${SCRIPTDIR}/../run/${SCRIPTNAME}.pid
 
 if [ -f $PIDFILE ]; then
 	echo "alread running as pid: $(cat $PIDFILE)"

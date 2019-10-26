@@ -1,7 +1,8 @@
 #!/bin/bash
 
 SCRIPTDIR=$(dirname $0)
-PIDFILE=$SCRIPTDIR/../run/$0.pid
+SCRIPTNAME=$(basename $0)
+PIDFILE=${SCRIPTDIR}/../run/${SCRIPTNAME}.pid
 
 if [ -f $PIDFILE ]; then
 	echo "alread running as pid: $(cat $PIDFILE)"
@@ -27,7 +28,7 @@ trap 'rm -f $PIDFILE' EXIT
 
 HA_URL="http://omv.fritz.box:8080/basicui/app"
 
-/usr/bin/chromium-browser --start-fullscreen --app $HA_URL' &
+/usr/bin/chromium-browser --start-fullscreen --app $HA_URL &
 CHILDPID=$!
 echo "$CHILDPID" > $PIDFILE 
 
