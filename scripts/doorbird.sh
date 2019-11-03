@@ -26,7 +26,7 @@ fi
 
 trap 'rm -f $PIDFILE' EXIT
 
-QDoorBirdViewer &
+${SCRIPTDIR}/../../build/QDoorBirdViewer &
 CHILDPID=$!
 echo "$CHILDPID" > $PIDFILE 
 
