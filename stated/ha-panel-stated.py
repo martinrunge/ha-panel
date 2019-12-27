@@ -11,6 +11,18 @@ from aiohttp import web
 import ravel
 from dbussy import DBusError
 import os.path
+from hbmqtt.client import MQTTClient, ClientException
+from hbmqtt.mqtt.constants import QOS_1, QOS_2
+
+# --------------------------------------------------------------------------- # 
+# configure the client logging
+# --------------------------------------------------------------------------- # 
+import logging
+logging.basicConfig()
+log = logging.getLogger()
+log.setLevel(logging.ERROR)
+log.setLevel(logging.INFO)
+
 
 # states: each state of the display panel == a different screen is shown
 #   - doorbird_active
@@ -29,6 +41,8 @@ scriptdir = os.path.dirname(__file__)
 
 scriptsdir = os.path.normpath(os.path.join(scriptdir, "../scripts"))
 pidfiledir = os.path.normpath(os.path.join(scriptdir, "../run"))
+
+MQTTC = MQTTClient()
 
 async def run_command(*args):
     # Create subprocess
@@ -77,24 +91,24 @@ async def getWindowIDs():
     
     for line in lines:
         tokens = line.split(None, 4)
-        winID = tokens[0]
-        type = tokens[1]
-        pid = tokens[2]
-        xclient = tokens[3]
-        title = tokens[4]
+        if len(tokens) >= 5:
+            winID = tokens[0]
+            type = tokens[1]
+            pid = tokens[2]
+            xclient = tokens[3]
+            title = tokens[4]
         
-        for pw in PanelWindows:
-            if pw.pid == pid:
-                pw.winID = winID
-                pw.title = title
+            for pw in PanelWindows:
+                if pw.pid == pid:
+                    pw.winID = winID
+                    pw.title = title
                 
 
-def handle_idle(request):
+async def handle_idle(request):
     err_msg = "successfully set display to idle"
     res_code = 200
-    
+    await MQTTC.publish('/Kueche/panel/dashboard', 'Info'.encode('utf-8'))
     print("system idle")
-    
     return web.Response(status=res_code, text=err_msg)
     
 
@@ -132,10 +146,6 @@ async def handle_db_viewer_ctrl(request):
 
 
 
-         
-
-
-
 async def handle(request):
     name = request.match_info.get('name', "Anonymous")
     print("got request")
@@ -149,6 +159,29 @@ async def handle_sub(request):
     res = await run_command("sleep", "20")
     return web.Response(text=res)
 
+
+
+# @asyncio.coroutine
+async def mqtt_recv_coro():
+    try:
+        while True:
+            message = await MQTTC.deliver_message()
+            packet = message.publish_packet
+            print("%s => %s" % (packet.variable_header.topic_name, str(packet.payload.data)))
+        await MQTTC.unsubscribe(['/Kueche/panel/dashboard'])
+        await MQTTC.disconnect()
+    except ClientException as ce:
+        log.error("Client exception: %s" % ce)
+
+
+async def initMQTT(app):
+    await MQTTC.connect('mqtt://omv.fritz.box/')
+    # Subscribe to '$SYS/broker/uptime' with QOS=1
+    # Subscribe to '$SYS/broker/load/#' with QOS=2
+    await MQTTC.subscribe([
+            ('/Kueche/panel/dashboard', QOS_1),
+         ])
+    asyncio.create_task(mqtt_recv_coro())
 
 
 async def init(app):
@@ -166,6 +199,7 @@ async def init(app):
 
 
 app = web.Application()
+app.on_startup.append(initMQTT)
 app.on_startup.append(init)
 app.add_routes([web.get('/', handle),
                 web.get('/sub', handle_sub),
@@ -173,5 +207,9 @@ app.add_routes([web.get('/', handle),
                 web.get('/idle', handle_idle)])
 
 # if __name__ == '__main__':
-web.run_app(app)
+try:
+    web.run_app(app)
+    
+except OSError as oserr:
+    log.error(str(oserr))
     
