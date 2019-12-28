@@ -106,6 +106,7 @@ async def getWindowIDs():
 
 async def handle_idle(request):
     err_msg = "successfully set display to idle"
+    await run_command(os.path.join(scriptsdir, 'ha-panel.sh')
     res_code = 200
     await MQTTC.publish('/Kueche/panel/dashboard', 'Info'.encode('utf-8'))
     print("system idle")
