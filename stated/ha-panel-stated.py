@@ -44,6 +44,8 @@ pidfiledir = os.path.normpath(os.path.join(scriptdir, "../run"))
 
 MQTTC = MQTTClient()
 
+PanelState = 'idle'
+
 async def run_command(*args):
     # Create subprocess
     process = await asyncio.create_subprocess_exec(
@@ -106,11 +108,15 @@ async def getWindowIDs():
 
 async def handle_kuechenpanel(request):
     itemstr = request.match_info['state']
+    targetDashboard = itemstr
+    if itemstr == 'idle':
+        err_msg = "successfully set display to idle"
+        PanelStaus = itemstr
+        targetDashboard = 'Info'
+        await run_command(os.path.join(scriptsdir, 'ha-panel.sh'))
         
-    err_msg = "successfully set display to idle"
-    await run_command(os.path.join(scriptsdir, 'ha-panel.sh')
     res_code = 200
-    await MQTTC.publish('/Kueche/panel/dashboard', itemstr.encode('utf-8'))
+    await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
     print("system idle")
     return web.Response(status=res_code, text=err_msg)
     
@@ -118,22 +124,28 @@ async def handle_kuechenpanel(request):
 def doorbird_viewer_ctrl(cmd):
     res_code = 200
     err_msg = "successfully executed '%s'"%cmd
-    try:
-        ifc = ravel.session_bus()["de.rungenetz.doorbirdviewer"]["/"].get_interface("de.rungenetz.doorbirdviewer")
-        if cmd == "play":
-            ifc.play()
+    if cmd == "activate":
+        if PanelState == 'idle':
+            await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
         else:
-            if cmd == "stop":
-                ifc.stop()
+            await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
+    else:
+        try:
+            ifc = ravel.session_bus()["de.rungenetz.doorbirdviewer"]["/"].get_interface("de.rungenetz.doorbirdviewer")
+            if cmd == "play":
+                ifc.play()
             else:
-                res_code = 400
-                err_msg = "method '%s' not implemented"%cmd
-                pass    
-        
-    except DBusError as ex:
-        print(str(ex))
-        res_code = 500
-        err_msg = "str(ex)"
+                if cmd == "stop":
+                    ifc.stop()
+                else:
+                    res_code = 400
+                    err_msg = "method '%s' not implemented"%cmd
+                    pass    
+            
+        except DBusError as ex:
+            print(str(ex))
+            res_code = 500
+            err_msg = "str(ex)"
      
     finally:
         return (res_code, err_msg)    
