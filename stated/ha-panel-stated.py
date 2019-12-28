@@ -121,16 +121,16 @@ async def handle_kuechenpanel(request):
     return web.Response(status=res_code, text=err_msg)
     
 
-def doorbird_viewer_ctrl(cmd):
+async def doorbird_viewer_ctrl(cmd):
     res_code = 200
     err_msg = "successfully executed '%s'"%cmd
-    if cmd == "activate":
-        if PanelState == 'idle':
-            await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
+    try:
+        if cmd == "activate":
+            if PanelState == 'idle':
+                await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
+            else:
+                await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
         else:
-            await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
-    else:
-        try:
             ifc = ravel.session_bus()["de.rungenetz.doorbirdviewer"]["/"].get_interface("de.rungenetz.doorbirdviewer")
             if cmd == "play":
                 ifc.play()
@@ -142,7 +142,7 @@ def doorbird_viewer_ctrl(cmd):
                     err_msg = "method '%s' not implemented"%cmd
                     pass    
             
-        except DBusError as ex:
+    except DBusError as ex:
             print(str(ex))
             res_code = 500
             err_msg = "str(ex)"
@@ -155,7 +155,7 @@ async def handle_db_viewer_ctrl(request):
 
     print("got request '%s' with mehtod '%s'"%(str(request.url), method))
     
-    (res_code, err_msg) = doorbird_viewer_ctrl(method)
+    (res_code, err_msg) = await doorbird_viewer_ctrl(method)
     
     return web.Response(status=res_code, text=err_msg)
 
