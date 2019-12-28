@@ -104,11 +104,13 @@ async def getWindowIDs():
                     pw.title = title
                 
 
-async def handle_idle(request):
+async def handle_kuechenpanel(request):
+    itemstr = request.match_info['state']
+        
     err_msg = "successfully set display to idle"
     await run_command(os.path.join(scriptsdir, 'ha-panel.sh')
     res_code = 200
-    await MQTTC.publish('/Kueche/panel/dashboard', 'Info'.encode('utf-8'))
+    await MQTTC.publish('/Kueche/panel/dashboard', itemstr.encode('utf-8'))
     print("system idle")
     return web.Response(status=res_code, text=err_msg)
     
@@ -205,7 +207,7 @@ app.on_startup.append(init)
 app.add_routes([web.get('/', handle),
                 web.get('/sub', handle_sub),
                 web.get('/doorbird_viewer_ctrl', handle_db_viewer_ctrl),
-                web.get('/idle', handle_idle)])
+                web.get('/kuechenpanel/{state}', handle_kuechenpanel)])
 
 # if __name__ == '__main__':
 try:
