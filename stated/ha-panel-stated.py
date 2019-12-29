@@ -45,6 +45,8 @@ pidfiledir = os.path.normpath(os.path.join(scriptdir, "../run"))
 MQTTC = MQTTClient()
 
 PanelState = 'idle'
+TimerTask = None
+
 
 async def run_command(*args):
     # Create subprocess
@@ -56,6 +58,19 @@ async def run_command(*args):
     stdout, stderr = await process.communicate()
     # Return stdout
     return stdout.decode().strip()
+
+class Timer:
+    def __init__(self, timeout, callback):
+        self._timeout = timeout
+        self._callback = callback
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._timeout)
+        await self._callback()
+
+    def cancel(self):
+        self._task.cancel()
 
 
 class CPanelWindow:
@@ -105,19 +120,34 @@ async def getWindowIDs():
                     pw.winID = winID
                     pw.title = title
                 
+async def setIdle():
+    PanelStaus = 'idle'
+    targetDashboard = 'Info'
+    await run_command(os.path.join(scriptsdir, 'ha-panel.sh'))
+    await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
+    print("system idle")
+    
+
+async def showDoorBird():
+    if PanelState == 'idle':
+        await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
+        TimerTask = Timer(30, setIdle)
+    else:
+        await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
+    
+
 
 async def handle_kuechenpanel(request):
     itemstr = request.match_info['state']
     targetDashboard = itemstr
+    err_msg = "successfully set display to %s"%itemstr
     if itemstr == 'idle':
         err_msg = "successfully set display to idle"
-        PanelStaus = itemstr
-        targetDashboard = 'Info'
-        await run_command(os.path.join(scriptsdir, 'ha-panel.sh'))
+        await setIdle()
+    else:
+        await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
         
     res_code = 200
-    await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
-    print("system idle")
     return web.Response(status=res_code, text=err_msg)
     
 
@@ -126,10 +156,7 @@ async def doorbird_viewer_ctrl(cmd):
     err_msg = "successfully executed '%s'"%cmd
     try:
         if cmd == "activate":
-            if PanelState == 'idle':
-                await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
-            else:
-                await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
+            await showDoorBird()
         else:
             ifc = ravel.session_bus()["de.rungenetz.doorbirdviewer"]["/"].get_interface("de.rungenetz.doorbirdviewer")
             if cmd == "play":
