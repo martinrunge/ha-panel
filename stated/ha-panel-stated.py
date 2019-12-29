@@ -140,7 +140,7 @@ async def setPanelStatus(status = 'none'):
 async def showDoorBird():
     if PanelState == 'idle':
         await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
-        setPanelStatus('doorbird_active')
+        await setPanelStatus('doorbird_active')
         TimerTask = Timer(30, setIdle)
     else:
         await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
@@ -155,7 +155,7 @@ async def handle_kuechenpanel(request):
         err_msg = "successfully set display to idle"
         await setIdle()
     else:
-        setPanelStatus(itemstr)
+        await setPanelStatus(itemstr)
         
     res_code = 200
     return web.Response(status=res_code, text=err_msg)
