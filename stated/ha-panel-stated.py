@@ -126,11 +126,21 @@ async def setIdle():
     await run_command(os.path.join(scriptsdir, 'ha-panel.sh'))
     await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
     print("system idle")
+
+
+async def setPanelStatus(status = 'none'):
+    PanelStatus = status
+    targetDashboard = 'none'
+    TimerTask.cancel()
+    await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
+    print("system active in state '%s'"%PanelStatus)
+    
     
 
 async def showDoorBird():
     if PanelState == 'idle':
         await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
+        setPanelStatus('doorbird_active')
         TimerTask = Timer(30, setIdle)
     else:
         await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
@@ -145,7 +155,7 @@ async def handle_kuechenpanel(request):
         err_msg = "successfully set display to idle"
         await setIdle()
     else:
-        await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
+        setPanelStatus(itemstr)
         
     res_code = 200
     return web.Response(status=res_code, text=err_msg)
