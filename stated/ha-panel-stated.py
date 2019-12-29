@@ -139,11 +139,11 @@ async def setPanelStatus(status = 'none'):
 
 async def showDoorBird():
     if PanelState == 'idle':
-        await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 1024x600+0+0')
+        await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry', '1024x600+0+0')
         await setPanelStatus('doorbird_active')
         TimerTask = Timer(30, setIdle)
     else:
-        await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry 320x240+650+10')
+        await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry',  '320x240+650+10')
     
 
 
