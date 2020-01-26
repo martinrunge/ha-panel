@@ -6,7 +6,8 @@ PIDFILE=${SCRIPTDIR}/../run/${SCRIPTNAME}.pid
 
 if [ -f $PIDFILE ]; then
 	echo "alread running as pid: $(cat $PIDFILE)"
-
+        
+ 	${SCRIPTDIR}/../../build/QDoorBirdViewer $@
 	mapfile -t LINES < <(/usr/bin/wmctrl -lp)
 
 	for LINE in "${LINES[@]}"
@@ -26,7 +27,7 @@ fi
 
 trap 'rm -f $PIDFILE' EXIT
 
-${SCRIPTDIR}/../../build/QDoorBirdViewer &
+${SCRIPTDIR}/../../build/QDoorBirdViewer $@ &
 CHILDPID=$!
 echo "$CHILDPID" > $PIDFILE 
 

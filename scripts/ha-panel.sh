@@ -26,7 +26,8 @@ fi
 
 trap 'rm -f $PIDFILE' EXIT
 
-HA_URL="http://omv.fritz.box:8080/basicui/app"
+# HA_URL="http://omv.fritz.box:8080/basicui/app"
+HA_URL="http://omv.fritz.box:8080/habpanel/index.html"
 
 /usr/bin/chromium-browser --start-fullscreen --app $HA_URL &
 CHILDPID=$!

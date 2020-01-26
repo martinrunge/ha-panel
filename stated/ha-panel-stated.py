@@ -131,7 +131,7 @@ async def setIdle():
 async def setPanelStatus(status = 'none'):
     PanelStatus = status
     targetDashboard = 'none'
-    TimerTask.cancel()
+    # TimerTask.cancel()
     await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
     print("system active in state '%s'"%PanelStatus)
     
