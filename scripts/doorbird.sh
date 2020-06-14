@@ -34,6 +34,6 @@ echo "$CHILDPID" > $PIDFILE
 trap 'kill $CHILDPID; rm -f $PIDFILE' EXIT
 
 echo "running in pid $CHILDPID"
-# wait $CHILDPID   # blocking parent, not used
-# echo "finished"
+wait $CHILDPID
+echo "finished"
 
