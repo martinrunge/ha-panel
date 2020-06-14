@@ -13,6 +13,9 @@ if [[ ! -x $(which wmctrl) ]]; then
 	exit -1
 fi
 
+xrandr --output HDMI-1 --gamma 2.2:2.2:2.2
+
+
 ${OWNDIR}/../scripts/doorbird.sh --minimized &
 ${OWNDIR}/../scripts/ha-panel.sh &
 
