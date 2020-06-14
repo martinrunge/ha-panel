@@ -20,7 +20,6 @@ from hbmqtt.mqtt.constants import QOS_1, QOS_2
 import logging
 logging.basicConfig()
 log = logging.getLogger()
-log.setLevel(logging.ERROR)
 log.setLevel(logging.INFO)
 
 
@@ -45,8 +44,6 @@ pidfiledir = os.path.normpath(os.path.join(scriptdir, "../run"))
 MQTTC = MQTTClient()
 
 PanelState = 'idle'
-TimerTask = None
-
 
 async def run_command(*args):
     # Create subprocess
@@ -60,18 +57,22 @@ async def run_command(*args):
     return stdout.decode().strip()
 
 class Timer:
-    def __init__(self, timeout, callback):
+    def __init__(self, timeout = 0, callback = None):
+        log.debug("Timer: timeout=%f  callback=%s"%(timeout,callback))
         self._timeout = timeout
         self._callback = callback
         self._task = asyncio.ensure_future(self._job())
 
     async def _job(self):
         await asyncio.sleep(self._timeout)
+        log.debug("Timer timeout. Executing %s"%self._callback)
         await self._callback()
 
     def cancel(self):
+        log.debug("cancel timer")
         self._task.cancel()
 
+TimerTask = Timer()
 
 class CPanelWindow:
     def __init__(self, name):
@@ -126,23 +127,26 @@ async def setIdle():
     await run_command(os.path.join(scriptsdir, 'ha-panel.sh'))
     await doorbird_viewer_ctrl("stop")
     await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
-    print("system idle")
+    log.info("system idle")
 
 
 async def setPanelStatus(status = 'none'):
     PanelStatus = status
+    log.info("setPanelStatus: %s"%PanelStatus)
     if(PanelStatus == "doorbird_active"):
         # if doorbord is active, don't stop it by automatically as it might have been started manually
         # If started automatically while in idle state, start timer afterwards in showDoorBird
         TimerTask.cancel()
         
     targetDashboard = 'none'
+    log.info("publishing status to MQTT")
     await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
-    print("system active in state '%s'"%PanelStatus)
+    log.info("system active in state '%s'"%PanelStatus)
     
     
 
 async def showDoorBird():
+    log.debug("showDoorBird PanelState=%s"%PanelState)
     if PanelState == 'idle':
         await run_command(os.path.join(scriptsdir, 'doorbird.sh'), '--geometry', '1024x600+0+0')
         await setPanelStatus('doorbird_active')
@@ -194,8 +198,6 @@ async def doorbird_viewer_ctrl(cmd):
         
 async def handle_db_viewer_ctrl(request):
     method = request.url.query['method']
-
-    print("got request '%s' with method '%s'"%(str(request.url), method))
     
     (res_code, err_msg) = await doorbird_viewer_ctrl(method)
     
@@ -254,7 +256,7 @@ async def init(app):
 
     
 
-
+log.info("starting up...")
 app = web.Application()
 app.on_startup.append(initMQTT)
 app.on_startup.append(init)
