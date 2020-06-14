@@ -130,8 +130,12 @@ async def setIdle():
 
 async def setPanelStatus(status = 'none'):
     PanelStatus = status
+    if(PanelStatus == "doorbird_active"):
+        # if doorbord is active, don't stop it by automatically as it might have been started manually
+        # If started automatically while in idle state, start timer afterwards in showDoorBird
+        TimerTask.cancel()
+        
     targetDashboard = 'none'
-    TimerTask.cancel()
     await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
     print("system active in state '%s'"%PanelStatus)
     
@@ -190,7 +194,7 @@ async def doorbird_viewer_ctrl(cmd):
 async def handle_db_viewer_ctrl(request):
     method = request.url.query['method']
 
-    print("got request '%s' with mehtod '%s'"%(str(request.url), method))
+    print("got request '%s' with method '%s'"%(str(request.url), method))
     
     (res_code, err_msg) = await doorbird_viewer_ctrl(method)
     
