@@ -27,7 +27,7 @@ fi
 
 trap 'rm -f $PIDFILE' EXIT
 
-${SCRIPTDIR}/../../build/QDoorBirdViewer $@ &
+${SCRIPTDIR}/../../build/QDoorBirdViewer $@ &> ~/tmp/QDoorBirdViewer.log &
 CHILDPID=$!
 echo "$CHILDPID" > $PIDFILE 
 
