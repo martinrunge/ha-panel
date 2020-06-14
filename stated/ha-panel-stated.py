@@ -124,6 +124,7 @@ async def setIdle():
     PanelStaus = 'idle'
     targetDashboard = 'Info'
     await run_command(os.path.join(scriptsdir, 'ha-panel.sh'))
+    await doorbird_viewer_ctrl("stop")
     await MQTTC.publish('/Kueche/panel/dashboard', targetDashboard.encode('utf-8'))
     print("system idle")
 

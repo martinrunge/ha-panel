@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+# all files in run folder
+run/*
