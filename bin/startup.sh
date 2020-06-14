@@ -13,7 +13,12 @@ if [[ ! -x $(which wmctrl) ]]; then
 	exit -1
 fi
 
+${OWNDIR}/../scripts/doorbird.sh --minimized
+
+${OWNDIR}/../scripts/ha-panel
+
+sleep 10
 
 
-nohup xidle -program $OWNDIR/notify-idle.sh -timeout 300  &
+nohup xidle -program ${OWNDIR}/notify-idle.sh -timeout 300  &
 
