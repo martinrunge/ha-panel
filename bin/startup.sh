@@ -13,8 +13,8 @@ if [[ ! -x $(which wmctrl) ]]; then
 	exit -1
 fi
 
-${OWNDIR}/../scripts/doorbird.sh --minimized  &
-${OWNDIR}/../scripts/ha-panel  &
+${OWNDIR}/../scripts/doorbird.sh --minimized &
+${OWNDIR}/../scripts/ha-panel.sh &
 
 sleep 10
 
